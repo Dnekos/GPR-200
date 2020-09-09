@@ -76,6 +76,16 @@ union vec3
 
 	vec3 const operator +(vec3 const& rh) const;	// addition operator (get sum of this and another)
 
+	vec3& operator*=(const float rhs); //multiplication assignment operator (multiply to this)
+
+	vec3& operator/=(const float rhs); // division operator (divide other to this)
+
+	double length() const; //get length of vector
+	
+	double length_squared() const; //get square of vector's length
+
+	inline vec3 const operator*(float rhs);
+	inline vec3 const operator/(float rhs);
 #endif	// __cplusplus
 };
 
@@ -91,15 +101,24 @@ floatv vec3add(float3 v_lh_sum, float3 const v_rh);	// add other to lh vector
 
 floatv vec3sum(float3 v_sum, float3 const v_lh, float3 const v_rh);	// get sum of lh and rh vector
 
+inline double dot(const vec3& u, const vec3& v);
+
+inline vec3 cross(const vec3& u, const vec3& v);
+
+inline vec3 unit_vector(vec3 v);
 
 #ifdef __cplusplus
 // DB: end C linkage for C++ symbols
 }
 #endif	// __cplusplus
 
+// Type aliases for vec3
+using point3 = vec3;   // 3D point
+using color = vec3;    // RGB color
 
 // DB: include inline definitions for this interface
 #include "_inl/gproVector.inl"
 
 
 #endif	// !_GPRO_VECTOR_H_
+
