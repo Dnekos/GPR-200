@@ -64,12 +64,7 @@ inline vec3& vec3::operator +=(vec3 const& rh)
 	return *this;
 }
 
-inline vec3 const vec3::operator +(vec3 const& rh) const
-{
-	return vec3((x + rh.x), (y + rh.y), (z + rh.z));
-}
-
-inline vec3& vec3::operator*=(const float rh) 
+inline vec3& vec3::operator *=(const float rh)
 {
 	x *= rh;
 	y *= rh;
@@ -77,21 +72,36 @@ inline vec3& vec3::operator*=(const float rh)
 	return *this;
 }
 
-inline vec3& vec3::operator/=(const float rhs) {
+inline vec3& vec3::operator /=(const float rhs) {
 	return *this *= 1 / rhs;
 }
 
-inline vec3 const vec3::operator*(float rhs) {
+inline vec3 const vec3::operator +(vec3 const& rh) const
+{
+	return vec3((x + rh.x), (y + rh.y), (z + rh.z));
+}
+
+inline vec3 const vec3::operator -(vec3 const& rh) const
+{
+	return vec3((x - rh.x), (y - rh.y), (z - rh.z));
+}
+
+inline vec3 const vec3::operator *(float rhs) const
+{
 
 	return vec3((x * rhs), (y * rhs), (z * rhs));
 }
-inline vec3 const vec3::operator/(float rhs) {
-	return vec3((x / rhs), (y / rhs), (z / rhs));;
+
+inline vec3 const vec3::operator /(float rhs) const
+{
+	return vec3((x / rhs), (y / rhs), (z / rhs));
 }
-inline double vec3::length() const {
+
+inline float vec3::length() const {
 	return sqrt(length_squared());
 }
-inline double vec3::length_squared() const {
+
+inline float vec3::length_squared() const {
 	return x * x + y * y + z * z;
 }
 
@@ -135,7 +145,7 @@ inline floatv vec3sum(float3 v_sum, float3 const v_lh, float3 const v_rh)
 	return vec3init(v_sum, (v_lh[0] + v_rh[0]), (v_lh[1] + v_rh[1]), (v_lh[2] + v_rh[2]));
 }
 
-inline double dot(const vec3& u, const vec3& v) {
+inline float dot(const vec3& u, const vec3& v) {
 	return u.x * v.x
 		+ u.y * v.y
 		+ u.z * v.z;

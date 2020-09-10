@@ -76,16 +76,20 @@ union vec3
 
 	vec3 const operator +(vec3 const& rh) const;	// addition operator (get sum of this and another)
 
-	vec3& operator*=(const float rhs); //multiplication assignment operator (multiply to this)
+	vec3 const operator -(vec3 const& rh) const;
 
-	vec3& operator/=(const float rhs); // division operator (divide other to this)
+	vec3 const operator *(float rhs) const; // multiplication operator (get product of this and other)
 
-	double length() const; //get length of vector
-	
-	double length_squared() const; //get square of vector's length
+	vec3 const operator /(float rhs) const; // division operator (get quotient of this and other)
 
-	inline vec3 const operator*(float rhs);
-	inline vec3 const operator/(float rhs);
+	vec3& operator *=(const float rhs); //multiplication assignment operator (multiply to this)
+
+	vec3& operator /=(const float rhs); // division operator (divide other to this)
+
+	float length() const; //get length of vector
+
+	float length_squared() const; //get square of vector's length
+
 #endif	// __cplusplus
 };
 
@@ -101,16 +105,18 @@ floatv vec3add(float3 v_lh_sum, float3 const v_rh);	// add other to lh vector
 
 floatv vec3sum(float3 v_sum, float3 const v_lh, float3 const v_rh);	// get sum of lh and rh vector
 
-inline double dot(const vec3& u, const vec3& v);
 
-inline vec3 cross(const vec3& u, const vec3& v);
-
-inline vec3 unit_vector(vec3 v);
 
 #ifdef __cplusplus
 // DB: end C linkage for C++ symbols
 }
 #endif	// __cplusplus
+
+float dot(const vec3& u, const vec3& v);
+
+vec3 cross(const vec3& u, const vec3& v);
+
+vec3 unit_vector(vec3 v);
 
 // Type aliases for vec3
 using point3 = vec3;   // 3D point

@@ -27,8 +27,11 @@
 #include <stdlib.h>
 #include <iostream>
 
-#include "gpro/gpro-math/gproVector.h"
+#include "gpro/gpro-math/rtweekend.h"
 #include "gpro/gpro-math/color.h"
+#include "gpro/gpro-math/hittable_list.h"
+#include "gpro/gpro-math/sphere.h"
+#include "gpro/gpro-math/camera.h"
 
 
 void testVector()
@@ -53,13 +56,34 @@ void testVector()
 #endif	// __cplusplus
 }
 
+color ray_color(const ray& r, const hittable& world)
+{
+	hit_record rec; // output needed for getting normal
+	if (world.hit(r, 0, infinity, rec)) // checks for collision
+	{
+		return (rec.normal + color(1, 1, 1)) * 0.5f; // returns color map based on normal
+	}
+	vec3 unit_direction = unit_vector(r.direction()); // makes it a unit vector to ease math
+	float t = 0.5f * (unit_direction.y + 1.0f); // getting height
+	return color(1.0f, 1.0f, 1.0f) * (1 - t) + color(0.5f, 0.7f, 1.0f) * t; //returns gradient
+}
 
 int main() {
 
 	// Image
 
-	const int image_width = 256;
-	const int image_height = 256;
+	const float aspect_ratio = 16.0f / 9.0f; // ratio for side of image
+	const int image_width = 400; // image length
+	const int image_height = static_cast<int>(image_width / aspect_ratio); // image height (got from width)s
+	const int samples_per_pixel = 100;
+
+	// World
+	hittable_list world;
+	world.add(make_shared<sphere>(point3(0, 0, -1), 0.5f));
+	world.add(make_shared<sphere>(point3(0, -100.5, -1), 100.0f));
+
+	// Camera
+	camera cam;
 
 	// Render
 
@@ -68,8 +92,15 @@ int main() {
 	for (int j = image_height - 1; j >= 0; --j) {
 		std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
 		for (int i = 0; i < image_width; ++i) {
-			color pixel_color(double(i) / (image_width - 1), double(j) / (image_height - 1), 0.25);
-			write_color(std::cout, pixel_color);
+			color pixel_color(0, 0, 0);
+			for (int s = 0; s < samples_per_pixel; ++s) // multiple rays to be averaged
+			{ 
+				float u = (i + random_float()) / (image_width - 1); // horizontal point
+				float v = (j + random_float()) / (image_height - 1); // vertical point
+				ray r = cam.get_ray(u, v); // ray that goes from viewport to space
+				pixel_color += ray_color(r, world); // sets color for position (and checks for collision)
+			}
+			write_color(std::cout, pixel_color, samples_per_pixel); // writes color to file
 		}
 	}
 
