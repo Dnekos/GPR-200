@@ -18,8 +18,12 @@
 	gproVector.h
 	Interface for vectors. Sets an example for C and C++ compatible headers.
 
-	Modified by: ____________
-	Modified because: ____________
+	Modified by: Demetrius Nekos
+	Modified because: Added more vec3 member functions and overloads as well as other important functions (dot/cross)
+*/
+
+/*
+	Framework created by Dan Buckstein, edited code taken from https://raytracing.github.io/books/RayTracingInOneWeekend.html by Peter Shirley
 */
 
 #ifdef _GPRO_VECTOR_H_
