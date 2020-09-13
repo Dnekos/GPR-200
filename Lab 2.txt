@@ -38,6 +38,17 @@ vec4 myEffect1(in vec2 fragCoord)
     return vec4(color,color, color,color); // return color
 }
 
+vec4 MovingEffect1(in vec2 fragCoord, in float time)
+{
+    float square_size = 15.0f; // size of checker square
+    
+    float checkerx = mod(floor(fragCoord.x / square_size+ (3.0*time*cos(time*0.01)))+0.5*time,2.0f); // get color value of x
+    float checkery = mod(floor(fragCoord.y / square_size+ (3.0*time*sin(time*0.01)))+0.5*time,2.0f); // get color value of y
+	float color = mod(checkerx+checkery,2.0f); // use sum to find final color value
+	
+    return vec4(color,color, color,color); // return color
+}
+
 vec4 myEffect2(in vec2 fragCoord, in vec2 resolution)
 {
     //credit to https://www.youtube.com/watch?v=9oYssHkOn0I for snippets of some code
@@ -64,21 +75,23 @@ vec4 myEffectMouse(in vec2 fragCoord, in vec2 resolution, in vec2 mouse, in floa
     
     // eclipse
     //float circle = (step(radius, c_length) == 0.0) ? 0.0 : radius / c_length;
-    float circle = (step(radius, c_length) == 0.0) ? radius / c_length : 0.0; // know if in circle
+    float circle = (step(radius, c_length) == 0.0) ? radius / c_length : 0.5; // know if in circle
     return vec4(vec3(circle),1.0); // return 'spotlight' effect   
 }
+
 vec4 trippyEffect0(in vec2 fragCoord, in vec2 resolution, in float time)
 { //takes Effect0 and makes it wacky
     vec4 E0 = myEffect0(fragCoord,resolution); // gets gradient from myEffect0
-    return normalize(vec4(E0.x*cos(time*5.0), E0.y*tan(time*1.5),
-                          E0.y*sin(time*3.0),1.0)); // return E0, adjusted by time
+    return normalize(vec4(E0.x*cos(time*5.0)+0.1, E0.y*2.0*sin(time*1.5),
+                          E0.y*sin(time*3.0)+0.1,1.0)); // return E0, adjusted by time
 }
+
 vec4 myEffect3(in vec2 fragCoord, in vec2 resolution, in vec2 mouse, in float time)
 {
     //basically combines other effects for a final effect
     return (myEffectMouse(fragCoord,resolution,mouse,time) * 
             trippyEffect0(fragCoord, resolution, time))
-        - myEffect1(fragCoord);
+        - MovingEffect1(fragCoord,time);
 }
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
