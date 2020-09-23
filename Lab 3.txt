@@ -28,7 +28,6 @@ int xorshift(in int value) {
     return value;
 }
 
-
 float nextFloat(in int seed) {
     // taken from zeh's work: https://www.shadertoy.com/view/tsf3Dn
     seed = xorshift(seed);
@@ -39,7 +38,6 @@ float nextFloat(in int seed, in float max) {
     // taken from zeh's work: https://www.shadertoy.com/view/tsf3Dn    
     return nextFloat(seed) * max;
 }
-
 
 // calcViewport: calculate the viewing plane (viewport) coordinate
 //    viewport:       output viewing plane coordinate
