@@ -1,3 +1,46 @@
+/*
+	Copyright 2020 Dan Buckstein
+	Copyright 2020 Ryan Koczalka
+	Copyright 2020 Demetrius J Nekos
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+		http://www.apache.org/licenses/LICENSE-2.0
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+*/
+
+/*
+	Credit to Peter Shirley, code taken from https://raytracing.github.io/books/RayTracingInOneWeekend.html
+*/
+
+int xorshift(in int value) {
+    // taken from zeh's work: https://www.shadertoy.com/view/tsf3Dn
+    // Xorshift*32
+    // Based on George Marsaglia's work: http://www.jstatsoft.org/v08/i14/paper
+    value ^= value << 13;
+    value ^= value >> 17;
+    value ^= value << 5;
+    return value;
+}
+
+
+float nextFloat(in int seed) {
+    // taken from zeh's work: https://www.shadertoy.com/view/tsf3Dn
+    seed = xorshift(seed);
+    return abs(fract(float(seed) / 3141.592653));
+}
+
+float nextFloat(in int seed, in float max) {
+    // taken from zeh's work: https://www.shadertoy.com/view/tsf3Dn    
+    return nextFloat(seed) * max;
+}
+
+
 // calcViewport: calculate the viewing plane (viewport) coordinate
 //    viewport:       output viewing plane coordinate
 //    ndc:            output normalized device coordinate
@@ -7,9 +50,11 @@
 //    viewportHeight: input height of viewing plane
 //    fragCoord:      input coordinate of current fragment (in pixels)
 //    resolution:     input resolution of screen (in pixels)
+//	  seed:			  used for seeding the random sample
 void calcViewport(out vec2 viewport, out vec2 ndc, out vec2 uv,
                   out float aspect, out vec2 resolutionInv,
-                  in float viewportHeight, in vec2 fragCoord, in vec2 resolution)
+                  in float viewportHeight, in vec2 fragCoord, in vec2 resolution,
+                  in float seed)
 {
     // inverse (reciprocal) resolution = 1 / resolution
     resolutionInv = 1.0 / resolution;
@@ -17,8 +62,13 @@ void calcViewport(out vec2 viewport, out vec2 ndc, out vec2 uv,
     // aspect ratio = screen width / screen height
     aspect = resolution.x * resolutionInv.y;
 
+    //using noise as random to get samples
+    float random_sample_x = (nextFloat(int(seed),1.0)+1.0) / 2.0;
+    float random_sample_y = (nextFloat(int(seed),1.0)+1.0) / 2.0;
+    
     // uv = screen-space coordinate = [0, 1) = coord / resolution
-    uv = fragCoord * resolutionInv;
+    uv = vec2((fragCoord.x + random_sample_x)* resolutionInv.x,
+              (fragCoord.y + random_sample_y)* resolutionInv.y);
 
     // ndc = normalized device coordinate = [-1, +1) = uv*2 - 1
     ndc = uv * 2.0 - 1.0;
@@ -26,6 +76,44 @@ void calcViewport(out vec2 viewport, out vec2 ndc, out vec2 uv,
     // viewport: x = [-aspect*h/2, +aspect*h/2), y = [-h/2, +h/2)
     viewport = ndc * (vec2(aspect, 1.0) * (viewportHeight * 0.5));
 }
+
+// hit_record: keeps track of components related to hitting an object
+//	  p:		  vector of hit
+//	  normal:	  normal vector
+//	  t:		  time
+//	  front_face: true if ray hits face, false if it does not
+struct hit_record 
+{
+    vec4 p;
+    vec4 normal;
+    float t;
+    bool front_face;
+};
+    
+// circle: struct to keep a circle's components together
+//	  center: coordinates of the center of the circle
+//	  radius: length of the radius of the circle
+struct circle 
+{
+    vec4 center;
+    float radius;
+};
+    
+// set_face_normal
+//    rayDirection: output direction of ray from origin
+//    rayOrigin:    output origin point of ray
+//	  outward_normal
+//    front_face
+//    normal
+void set_face_normal(in vec4 rayDirection, in vec4 rayOrigin, 
+                     in vec4 outward_normal, out bool front_face, out vec4 normal) 
+{
+    // front_face = does this ray point in the same direction as the normalized ray?
+	front_face = dot(rayDirection, outward_normal) < 0.0;
+    // normal = direction that the ray is facing
+	normal = front_face ? outward_normal :-outward_normal;
+}
+    
 
 // calcRay: calculate the ray direction and origin for the current pixel
 //    rayDirection: output direction of ray from origin
@@ -44,50 +132,116 @@ void calcRay(out vec4 rayDirection, out vec4 rayOrigin,
     rayDirection = vec4(viewport.x, viewport.y, -focalLength, 0.0);
 }
 
-// hitSphere: calculate collision of ray onto sphere given a ray and sphere
-//    center:       center point of sphere
-//    radius:       radius of sphere
+// rayAt: finds position of rat at time t
 //    rayDirection: input ray direction
 //    rayOrigin:    input ray origin
-bool hitSphere(in vec4 center, in float radius, 
-               in vec4 rayDirection, in vec4 rayOrigin) 
+//	  t:			time
+vec4 rayAt(in vec4 rayDirection, in vec4 rayOrigin, float t)  
 {
- 	//
-    vec4 oc = rayOrigin - center;
-    
-    //
-    float a = dot(rayDirection, rayDirection);
-    float b = 2.0 * dot(oc, rayDirection);
-    float c = dot(oc, oc) - radius*radius;
-    
-    //
-    float discriminant = b*b - 4.0*a*c;
-    
-    //
-    return (discriminant > 0.0);
+	return rayOrigin + t*rayDirection;
 }
 
+// hit_Sphere: calculate collision of ray onto sphere given a ray and sphere
+//    sphere:		input sphere to collide with
+//    rayDirection: input ray direction
+//    rayOrigin:    input ray origin
+//	  t_min:		input temp minimum
+//	  t_max:		input temp maximum
+//	  rec:			output 
+bool hit_Sphere(in circle sphere, 
+                in vec4 rayDirection, in vec4 rayOrigin,
+               in float t_min, in float t_max, out hit_record rec)  
+{
+    // various arrays used for calculations later on
+    vec4 oc = rayOrigin - sphere.center;
+    float a = length(rayDirection)*length(rayDirection);
+    float half_b = dot(oc, rayDirection);
+    float c = length(oc)*length(oc) - sphere.radius*sphere.radius;
+
+    // determines if object will get hit
+    float discriminant = half_b*half_b - a*c;
+
+    if (discriminant > 0.0) {
+        // calculate values used later in functions
+        float root = sqrt(discriminant);
+        float temp = (-half_b - root) / a;
+        
+        // tests if temp is in the range of values
+        if (temp < t_max && temp > t_min) {
+            rec.t = temp;
+            rec.p = rayAt(rayDirection, rayOrigin, rec.t);
+            vec4 outward_normal = (rec.p - sphere.center) / sphere.radius;
+            set_face_normal(rayDirection,rayOrigin, outward_normal,rec.front_face,rec.normal);
+            return true;
+        }
+        
+        // recalculates temp
+        temp = (-half_b + root) / a;
+        
+        // tests if temp is in the range of values
+        if (temp < t_max && temp > t_min) {
+            rec.t = temp;
+            rec.p = rayAt(rayDirection, rayOrigin, rec.t);
+            vec4 outward_normal = (rec.p - sphere.center) / sphere.radius;
+            set_face_normal(rayDirection,rayOrigin, outward_normal,rec.front_face,rec.normal);
+
+            return true;
+        }
+    }
+    return false;
+}
+
+// hit_list: calculate if list of objects collide with rays
+//    objects:		input list of spheres
+//    rayDirection: input ray direction
+//    rayOrigin:    input ray origin
+//	  t_min:		input temp minimum
+//	  t_max:		input temp maximum
+//	  rec:			output 
+bool hit_List(in circle objects[2],
+              in vec4 rayDirection, in vec4 rayOrigin,
+              in float t_min, in float t_max, out hit_record rec)  
+{
+    // values used later on
+    hit_record temp_rec;
+    bool hit_anything = false;
+    float closest_so_far = t_max;
+    
+	// loops through objects
+    for (int i =0;i < 2;i++)
+    {
+        // tests if current object is colliding with sphere
+        if (hit_Sphere(objects[i], rayDirection,rayOrigin,t_min, closest_so_far, temp_rec)) {
+            hit_anything = true;
+            closest_so_far = temp_rec.t;
+            rec = temp_rec;
+        }
+    }
+
+    return hit_anything;
+}
 
 // calcColor: calculate the color of a pixel given a ray
 //    rayDirection: input ray direction
 //    rayOrigin:    input ray origin
-vec4 calcColor(in vec4 rayDirection, in vec4 rayOrigin)
+//	  world:		input array of sphere objects
+vec4 calcColor(in vec4 rayDirection, in vec4 rayOrigin, in circle world[2])
 {
-    // checks if ray collides with sphere in middle of viewport0
-    if (hitSphere(vec4(0.0, 0.0, -1.0, 1.0), 0.5, rayDirection, rayOrigin))
-        // returns red
-        return vec4(1.0, 0.0, 0.0, 1.0);
+    hit_record rec;
+    if (hit_List(world,rayDirection,rayOrigin,0.0,9999999999.0,rec)) {
+        return 0.5 * (rec.normal + vec4(1.0,1.0,1.0,0.0));
+    }
+        
+    vec4 unit_direction = normalize(rayDirection);
     
-    //get the height of the ray when it hits the background
-    float t = 0.5* (normalize(rayDirection).y+1.0);
-    
-    //determine color to get gradient
-    return vec4((1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0), 1.0);
+    float t = 0.5*(unit_direction.y + 1.0);
+    return (1.0-t)*vec4(1.0, 1.0, 1.0,0.0) + t*vec4(0.5, 0.7, 1.0,0.0);
         
     // DUMMY RESULT: OUTPUT RAY DIRECTION AS-IS
     // -> what does the ray look like as color?
     //return rayDirection;
 }
+
 
 // mainImage: process the current pixel (exactly one call per pixel)
 //    fragColor: output final color for current pixel
@@ -102,14 +256,31 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     // ray
     vec4 rayDirection, rayOrigin;
 
-    // setup
-    calcViewport(viewport, ndc, uv, aspect, resolutionInv,
-                 viewportHeight, fragCoord, iResolution.xy);
-    calcRay(rayDirection, rayOrigin,
-            viewport, focalLength);
+    //hittables
+    circle world[2] = circle[2](circle(vec4(0.0,0.0,-1.0,1.0), 0.5),
+                                circle(vec4(0.0,-100.5,-1.0,1.0), 100.0));
 
+    // how many times to get color
+    float samples_per_pixel = 100.0;
+    
     // color
-    fragColor = calcColor(rayDirection, rayOrigin);
+    vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
+
+    
+    
+    for (float i = 0.0; i < samples_per_pixel;i++)
+    {        
+        // setup
+        calcViewport(viewport, ndc, uv, aspect, resolutionInv,
+                     viewportHeight, fragCoord, iResolution.xy,iTime);
+        
+        calcRay(rayDirection, rayOrigin,
+                viewport, focalLength);
+        
+        color = color + calcColor(rayDirection, rayOrigin,world);        
+    }
+    
+    fragColor = color / samples_per_pixel;
 
     // TEST COLOR:
     //  -> what do the other things calculated above look like?
