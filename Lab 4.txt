@@ -1,3 +1,18 @@
+/*
+	Copyright 2020 Dan Buckstein
+	Copyright 2020 Demetrius J Nekos
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+		http://www.apache.org/licenses/LICENSE-2.0
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+*/
+
 // GLSL STARTER CODE BY DANIEL S. BUCKSTEIN
 
 
@@ -15,12 +30,19 @@ vec4 asOffset(in vec3 offset)
     return vec4(offset, 0.0);
 }
 
+// sPointLight: hittable sphere struct
+//    center: point of origin
+//    radius: size of sphere
 struct sSphere
 {
     vec4 center;
     float radius;
 };
-    
+
+// sPointLight: point light struct
+//    center:    point of origin
+//    color:     color emitted by light
+//    intensity: how strong the light is
 struct sPointLight
 {
     vec4 center;
@@ -28,6 +50,11 @@ struct sPointLight
     float intensity; // acts like radius
 };
 
+
+// initSphere: fills out struct
+//    sphere: output struct
+//    center: input center point
+//    radius: input radius
 bool initSphere(out sSphere sphere, in vec3 center, float radius)
 {
     sphere.center = asPoint(center);
@@ -40,6 +67,11 @@ bool initSphere(out sSphere sphere, in vec3 center, float radius)
     return false;
 }
 
+// initPointLight: fills out struct
+//    light:     output struct
+//    center:    input center point
+//    color:     input light color
+//    intensity: input light intensity
 bool initPointLight( out sPointLight light, 
                     in vec3 center, 
                     in vec4 color, float intensity)
@@ -102,57 +134,60 @@ void calcRay(out vec4 rayDirection, out vec4 rayOrigin,
     rayDirection = asOffset(viewport - eyePosition);
 }
 
+// lenSq: calculate the square of length, or the dot of a vector and itself
+//    x: vector to be gotten the length of
 float lenSq(vec2 x)
 {
     return dot(x,x);
 }
 
+// calcLighting: calculates Lambertian and Blinn-Phong reflectance, and returns part of the summation of the final color
+//    light: the current Point Light
+//    position:     point on the sphere that we are drawing
+//    normal:       normal vector from point
+//    rayOrigin:    input ray origin
 vec4 calcLighting (in sPointLight light, in vec3 position, 
-                   in vec3 normal, in vec3 rayOrigin, in vec4 surfaceColor)
+                   in vec3 normal, in vec3 rayOrigin)
 {
     // LAMBERTIAN REFLECTANCE
-    vec3 lightVector = light.center.xyz - position.xyz;
-	 
-    float diffuseCoefficient = max(0.0, dot(normalize(lightVector).xyz, normal));
-    //return vec4(vec3(diffuseCoefficient),1.0);
+    vec3 lightVector = light.center.xyz - position; // get vector of position to the light
+	float lightLength = length(lightVector); // get length of light vector
+    lightVector = lightVector / lightLength; // normalizes vector
     
-    float intensityRatio = length(lightVector)/light.intensity;
+    float diffuseCoefficient = max(0.0, dot(lightVector, normal)); // get coefficient
+    
+    float intensityRatio = lightLength/light.intensity; // simplifying attenuation equation by doing this once
     float attenuation = 1.0 / (1.0 + intensityRatio +
-                             (intensityRatio * intensityRatio));
-    float Lambertian = diffuseCoefficient * attenuation; // final reflectance
+                             (intensityRatio * intensityRatio)); // get attenuation
+    float Lambertian = diffuseCoefficient * attenuation; // final lambertian
 
     // BLINN-PHONG REFLECTANCE
+    vec3 viewVector = normalize(rayOrigin - position); // unit vector of camera to point
+    //vec3 reflectedLightVector =reflect(-normalize(lightVector).xyz, normal.xyz); // unneeded for Blinn
     
-    vec3 viewVector = normalize(rayOrigin - position);
-    //vec3 reflectedLightVector =reflect(-normalize(lightVector).xyz, normal.xyz);
-    
-    float specular = dot(normal.xyz, normalize(viewVector + normalize(lightVector)));
+    float specular = dot(normal, normalize(viewVector + lightVector)); // get base specular coefficient
     specular *= specular ; // specularCoefficient^2
     specular *= specular; // specularCoefficient^4
     specular *= specular * specular * specular; // ^16
     specular *= specular * specular * specular; // ^64
-    specular *= specular * specular * specular; // ^256
+    specular *= specular * specular * specular; // ^256 = a
     specular *= 4.0; // Blinn coefficient
     
-    return (Lambertian * surfaceColor + specular) * light.color;
+    return (Lambertian * vec4(normal * 0.5 + 0.5, 1.0) + specular) * light.color;
 }
 
 // calcColor: calculate the color of a pixel given a ray
 //    rayDirection: input ray direction
 //    rayOrigin:    input ray origin
 vec4 calcColor(in vec4 rayDirection, in vec4 rayOrigin,float time)
-{
-    // DUMMY RESULT: OUTPUT RAY DIRECTION AS-IS
-    //  -> what does the ray look like as color?
-    //return rayDirection;
-	
+{	
     // SCENE
     sSphere sphere;
-    initSphere(sphere, vec3(0.0,0.0,-4.0),0.5);
+    initSphere(sphere, vec3(0.0,0.0,-4.0), 0.6);
     
     sPointLight lighting[3];
     initPointLight(lighting[0], vec3(1.0 + cos(time),1.5 + sin(time),-2.0),vec4(1.0,1.0,1.0,1.0),4.0);
-    initPointLight(lighting[1], vec3(1.0+ sin(time),-1.5+ cos(time),-2.0),vec4(1.0,0.5,0.5,1.0),4.0);
+    initPointLight(lighting[1], vec3(5.0*sin(time),0.0,5.0*cos(time)),vec4(1.0,0.5,0.5,1.0),7.0);
     initPointLight(lighting[2], vec3(-2.0 + 3.0*cos(time),1.5+ 3.0*sin(time),-5.0),vec4(3.0,3.0,7.0,1.0),1.2);
 
     vec3 dp;
@@ -169,33 +204,26 @@ vec4 calcColor(in vec4 rayDirection, in vec4 rayOrigin,float time)
         
         vec3 position = sphere.center.xyz +
             vec3(dp.x,dp.y, sqrt(dp.z));
-        vec3 normal = //normalize(
-            //position - sphere.center.xyz);
-            (position - sphere.center.xyz) / sphere.radius; // radius is length
+        vec3 normal = (position - sphere.center.xyz) / sphere.radius; // radius is length
         
-        vec4 sphereColor = vec4(normal * 0.5 + 0.5, 1.0);
+        vec4 sphereColor = vec4(normal * 0.5 + 0.5, 1.0); // use normal map as sphere's color
         
         // LIGHTING
-        
-        
-        vec4 ambient = vec4(0.0,0.4,0.4,0.0);
-        vec4 totalLighting = calcLighting(lighting[0], position.xyz, 
-                                           normal.xyz, rayOrigin.xyz, sphereColor);
-        totalLighting += calcLighting(lighting[1], position.xyz, 
-                                    normal.xyz, rayOrigin.xyz, sphereColor);
-        totalLighting += calcLighting(lighting[2], position.xyz, 
-                                           normal.xyz, rayOrigin.xyz, sphereColor);
+        //geta Lambertian and Binn-Phong lighting for each light, the 'summation' part of the equation
+        vec4 totalLighting = calcLighting(lighting[0], position.xyz, // lighting for pointlight 0
+                                    normal.xyz, rayOrigin.xyz);
+        totalLighting += calcLighting(lighting[1], position.xyz, // lighting for pointlight 1
+                                    normal.xyz, rayOrigin.xyz);
+        totalLighting += calcLighting(lighting[2], position.xyz, // lighting for pointlight 2
+                                    normal.xyz, rayOrigin.xyz);
 
-        //return ambient * 0.15 + (lambertian * sphereColor + specular) * lighting[0].color; //Phong color
+        vec4 ambient = vec4(0.0, 0.4, 0.4, 1.0); // global ambient
         return ambient * 0.15 + totalLighting;
-
-        //return vec4(normal * 0.5 + 0.5, 1.0);
     }
         
 	// BACKGROUND
 	const vec3 warm = vec3(0.8, 0.4, 0.2), cool = vec3(0.2, 0.4, 0.8);
-	//return vec4(mix(warm, cool, rayDirection.y), 1.0);
-	return vec4(0.5);
+	return vec4(mix(warm, cool, rayDirection.y), 1.0);
 }
 
 // mainImage: process the current pixel (exactly one call per pixel)
