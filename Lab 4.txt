@@ -129,9 +129,7 @@ vec4 calcColor(in vec4 rayDirection, in vec4 rayOrigin)
                rSq = sphere.radius * sphere.radius;
     
     if (lSq <= rSq)
-    {
-        //return vec4(0.0,1.0,1.0,1.0);
-        
+    {        
         // actually dz_sq for now
         //dp.z = sphere.radius * sphere.radius 
         //    - (dp.x * dp.x + dp.y * dp.y);
@@ -143,18 +141,35 @@ vec4 calcColor(in vec4 rayDirection, in vec4 rayOrigin)
             //position - sphere.center.xyz);
             (position - sphere.center.xyz) / sphere.radius; // radius is length
         
-        vec3 distanceToLight = light.center.xyz - position.xyz;
+        vec4 sphereColor = vec4(normal * 0.5 + 0.5, 1.0);
+        
+        // LAMBERTIAN REFLECTANCE
+        vec3 lightVector = light.center.xyz - position.xyz;
 	     
-        float diffuseCoefficient = max(0.0, dot(normalize(distanceToLight).xyz, normal.xyz));
+        float diffuseCoefficient = max(0.0, dot(normalize(lightVector).xyz, normal.xyz));
         //return vec4(vec3(diffuseCoefficient),1.0);
         
-        float intensityRatio = length(distanceToLight)/light.intensity;
+        float intensityRatio = length(lightVector)/light.intensity;
         float attenuation = 1.0 / (1.0 + intensityRatio +
                                  (intensityRatio * intensityRatio));
-        //return vec4(vec3(attenuation),1.0);
+        float Lambertian = diffuseCoefficient * attenuation; // final reflectance
 
-        return diffuseCoefficient * attenuation * light.color * vec4(normal * 0.5 + 0.5, 1.0);
+        // PHONG REFLECTANCE
         
+        vec3 viewVector = normalize(rayOrigin.xyz - position.xyz);
+        vec3 reflectedLightVector =reflect(-normalize(lightVector).xyz, 
+                                           normal.xyz);
+        float specular = max(0.0, dot(viewVector, reflectedLightVector));
+        specular *= specular; // specularCoefficient^2
+        specular *= specular; // specularCoefficient^4
+        specular *= specular * specular * specular; // specularCoefficient^16
+        specular *= specular * specular * specular; // specularCoefficient^64
+        //return vec4(specularCoefficient);
+        vec4 ambient = vec4(0.0,0.4,0.4,0.0);
+        
+        return ambient * 0.15 + (Lambertian * sphereColor + specular) * light.color; //Phong color
+        
+
         //return vec4(normal * 0.5 + 0.5, 1.0);
     }
         
