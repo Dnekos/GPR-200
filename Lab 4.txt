@@ -157,8 +157,7 @@ vec4 calcLighting (in sPointLight light, in vec3 position,
     float diffuseCoefficient = max(0.0, dot(lightVector, normal)); // get coefficient
    
     float intensityRatio = lightLength/light.intensity; // simplifying attenuation equation by doing this once
-    float attenuation = 1.0 / (1.0 + intensityRatio +
-                             (intensityRatio * intensityRatio)); // get attenuation
+    float attenuation = 1.0 / (1.0 + intensityRatio) * (1.0 + intensityRatio); // get attenuation
     float Lambertian = diffuseCoefficient * attenuation; // final lambertian
 
     // BLINN-PHONG REFLECTANCE
