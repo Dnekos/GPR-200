@@ -146,8 +146,9 @@ float lenSq(vec2 x)
 //    position:     point on the sphere that we are drawing
 //    normal:       normal vector from point
 //    rayOrigin:    input ray origin
+//	  viewVector:	vector from point to camera
 vec4 calcLighting (in sPointLight light, in vec3 position,
-                   in vec3 normal, in vec3 rayOrigin)
+                   in vec3 normal, in vec3 rayOrigin, in vec3 viewVector)
 {
     // LAMBERTIAN REFLECTANCE
     vec3 lightVector = light.center.xyz - position; // get vector of position to the light
@@ -157,14 +158,14 @@ vec4 calcLighting (in sPointLight light, in vec3 position,
     float diffuseCoefficient = max(0.0, dot(lightVector, normal)); // get coefficient
    
     float intensityRatio = lightLength/light.intensity; // simplifying attenuation equation by doing this once
-    float attenuation = 1.0 / (1.0 + intensityRatio) * (1.0 + intensityRatio); // get attenuation
+    float attenuation = 1.0 / (1.0 + intensityRatio +
+                             (intensityRatio * intensityRatio)); // get attenuation
     float Lambertian = diffuseCoefficient * attenuation; // final lambertian
 
     // BLINN-PHONG REFLECTANCE
-    vec3 viewVector = normalize(rayOrigin - position); // unit vector of camera to point
     //vec3 reflectedLightVector =reflect(-normalize(lightVector).xyz, normal.xyz); // unneeded for Blinn
    
-    float specular = dot(normal, normalize(viewVector + lightVector)); // get base specular coefficient
+    float specular = max(0.0,dot(normal, normalize(viewVector + lightVector))); // get base specular coefficient
     specular *= specular; // specularCoefficient^2
     specular *= specular; // specularCoefficient^4
     specular *= specular * specular * specular; // ^16
@@ -209,12 +210,14 @@ vec4 calcColor(in vec4 rayDirection, in vec4 rayOrigin,float time)
        
         // LIGHTING
         //geta Lambertian and Binn-Phong lighting for each light, the 'summation' part of the equation
+        vec3 viewVector = normalize(rayOrigin.xyz - position.xyz); // unit vector of camera to point
+
         vec4 totalLighting = calcLighting(lighting[0], position.xyz, // lighting for pointlight 0
-                                    normal.xyz, rayOrigin.xyz);
+                                    normal.xyz, rayOrigin.xyz,viewVector);
         totalLighting += calcLighting(lighting[1], position.xyz, // lighting for pointlight 1
-                                    normal.xyz, rayOrigin.xyz);
+                                    normal.xyz, rayOrigin.xyz,viewVector);
         totalLighting += calcLighting(lighting[2], position.xyz, // lighting for pointlight 2
-                                    normal.xyz, rayOrigin.xyz);
+                                    normal.xyz, rayOrigin.xyz,viewVector);
 
         vec4 ambient = vec4(0.0, 0.4, 0.4, 1.0); // global ambient
         return ambient * 0.15 + totalLighting;
