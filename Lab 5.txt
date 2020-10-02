@@ -197,6 +197,29 @@ color4 Effect2(in sampler2D channel, in sViewport vp)
     uvd = uvd*(1.0 + k*uvd*uvd);
     return texture(channel, vec2(0.5) + vec2(sin(uva), cos(uva))*uvd);
 }
+
+color4 Effect3(in sampler2D channel, in sViewport vp)
+{
+    vec3 position = vec3(vp.uv.x,vp.uv.y,0.0);;
+    vec3 normal = vec3(0.0,0.0,1.0);
+    
+    vec3 lightpos = vec3(cos(iTime) * 0.3 + 0.5, sin(iTime) * 0.3 + 0.5, 0.15);
+    float intensity = 3.0;
+    
+    // taken from Lab 4
+    vec3 lightVector = lightpos - position; // get vector of position to the light
+	float lightLength = length(lightVector); // get length of light vector
+    lightVector = lightVector / lightLength; // normalizes vector
+   
+    float diffuseCoefficient = max(0.0, dot(lightVector, normal)); // get coefficient
+   
+    float intensityRatio = lightLength/intensity; // simplifying attenuation equation by doing this once
+    float attenuation = 1.0 / (1.0 + intensityRatio +
+                             (intensityRatio * intensityRatio)); // get attenuation
+    return diffuseCoefficient * attenuation * texture(channel, vp.uv); // final lambertian
+    
+}
+
 //------------------------------------------------------------
 // RENDERING FUNCTIONS
 
@@ -224,7 +247,8 @@ color4 calcColor(in sViewport vp, in sRay ray)
     sCoord loc = px / res * ratio; // get location of point on texture
     //return Effect1(iChannel0, iChannel1,loc); // return mix of the two, fading on x axis
     //return Effect2(iChannel0, vp);
-    return FunnyEffect1(iChannel0, iChannel1,vp);
+    //return FunnyEffect1(iChannel0, iChannel1,vp);
+    return Effect3(iChannel0,vp);
 
     //return texture(iChannel0, loc);
 }
