@@ -220,6 +220,11 @@ color4 Effect3(in sampler2D channel, in sViewport vp)
     
 }
 
+color4 Effect4(in sampler2D channel, in sViewport vp)
+{
+	return texture(iChannel2,vec3(vp.uv.x,vp.uv.y + sin(iTime),1.0));
+}
+
 //------------------------------------------------------------
 // RENDERING FUNCTIONS
 
@@ -248,7 +253,8 @@ color4 calcColor(in sViewport vp, in sRay ray)
     //return Effect1(iChannel0, iChannel1,loc); // return mix of the two, fading on x axis
     //return Effect2(iChannel0, vp);
     //return FunnyEffect1(iChannel0, iChannel1,vp);
-    return Effect3(iChannel0,vp);
+    //return Effect3(iChannel0,vp);
+    return Effect4(iChannel0,vp);
 
     //return texture(iChannel0, loc);
 }
