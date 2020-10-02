@@ -171,6 +171,32 @@ color4 Effect1(in sampler2D channel1, in sampler2D channel2, sCoord loc)
     return mix(texture(iChannel0, loc),texture(iChannel1, loc),vec4(loc.x)); // return mix of the two, fading on x axis
 }
 
+color4 FunnyEffect1(in sampler2D channel1, in sampler2D channel2, in sViewport vp)
+{
+	
+    // credit to parameterized for barrel distort code from https://www.shadertoy.com/view/lttXD4
+    vec2 uv = vp.uv - vec2(0.5);
+    float uva = atan(uv.x, uv.y);
+    float uvd = sqrt(dot(uv, uv));
+    //k = negative for pincushion, positive for barrel
+    float k = sin(iTime);
+    uvd = uvd*(1.0 + k*uvd*uvd);
+    sCoord loc = vec2(0.5) + vec2(sin(uva), cos(uva))*uvd;
+    
+    return Effect1(channel1,channel2,loc);
+}
+
+color4 Effect2(in sampler2D channel, in sViewport vp)
+{
+    // credit to parameterized for barrel distort code from https://www.shadertoy.com/view/lttXD4
+    vec2 uv = vp.uv - vec2(0.5);
+    float uva = atan(uv.x, uv.y);
+    float uvd = sqrt(dot(uv, uv));
+    //k = negative for pincushion, positive for barrel
+    float k = sin(iTime);
+    uvd = uvd*(1.0 + k*uvd*uvd);
+    return texture(channel, vec2(0.5) + vec2(sin(uva), cos(uva))*uvd);
+}
 //------------------------------------------------------------
 // RENDERING FUNCTIONS
 
@@ -196,7 +222,9 @@ color4 calcColor(in sViewport vp, in sRay ray)
     sDCoord res = iChannelResolution[0].xy; // using channel 0 as they have the same resolution
     sScalar ratio = res.y * vp.resolutionInv.y; // ratio of texture and viewport
     sCoord loc = px / res * ratio; // get location of point on texture
-    return Effect1(iChannel0, iChannel1,loc); // return mix of the two, fading on x axis
+    //return Effect1(iChannel0, iChannel1,loc); // return mix of the two, fading on x axis
+    //return Effect2(iChannel0, vp);
+    return FunnyEffect1(iChannel0, iChannel1,vp);
 
     //return texture(iChannel0, loc);
 }
