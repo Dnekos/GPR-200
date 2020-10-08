@@ -316,7 +316,7 @@ color4 calcColor(in sViewport vp, in sRay ray, in float time, in sampler2D chann
     sCoord loc = px / res * ratio; // get location of point on texture
     //return Effect1(channel0, channel1,loc); // return mix of the two, fading on x axis
     //return Effect2(iChannel0, vp.uv);
-    //return Effect3(channel0,vp);
+    //return Effect3(channel0,vp, time);
     return Effect4(iChannel2, vp, ray, time);
     //return Effect4Bonus(iChannel2,vp, mouse);
 
