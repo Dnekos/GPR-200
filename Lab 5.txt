@@ -1,3 +1,17 @@
+/*
+	Copyright 2020 Demetrius J Nekos
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+		http://www.apache.org/licenses/LICENSE-2.0
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+*/
+
 // GLSL STARTER CODE BY DANIEL S. BUCKSTEIN
 
 //------------------------------------------------------------
@@ -165,45 +179,41 @@ void initRayOrtho(out sRay ray,
     initRayPersp(ray, eyePosition + sBasis(viewport.xy, 0.0), viewport);
 }
 
+// Effect1: returns two textures with a horizontal fade between them
+//    channel1: the leftmost texture
+//    channel2: the rightmost texture
+//    loc:      position
 color4 Effect1(in sampler2D channel1, in sampler2D channel2, sCoord loc)
 {
     //loc.x -= 0.5; // centering the textures
     return mix(texture(iChannel0, loc),texture(iChannel1, loc),vec4(loc.x)); // return mix of the two, fading on x axis
 }
 
-color4 FunnyEffect1(in sampler2D channel1, in sampler2D channel2, in sViewport vp)
-{
-	
-    // credit to parameterized for barrel distort code from https://www.shadertoy.com/view/lttXD4
-    vec2 uv = vp.uv - vec2(0.5);
-    float uva = atan(uv.x, uv.y);
-    float uvd = sqrt(dot(uv, uv));
-    //k = negative for pincushion, positive for barrel
-    float k = sin(iTime);
-    uvd = uvd*(1.0 + k*uvd*uvd);
-    sCoord loc = vec2(0.5) + vec2(sin(uva), cos(uva))*uvd;
-    
-    return Effect1(channel1,channel2,loc);
-}
-
-color4 Effect2(in sampler2D channel, in sViewport vp)
+// Effect2: returns a texture with barrel distortion laid on top
+//    channel: the texture to grap colors from
+//    uv:      normalized position
+color4 Effect2(in sampler2D channel, in vec2 uv)
 {    
-    // credit to parameterized for barrel distort code from https://www.shadertoy.com/view/lttXD4
-    vec2 uv = vp.uv - vec2(0.5);
-    float uva = atan(uv.x, uv.y);
-    float uvd = sqrt(dot(uv, uv));
-    //k = negative for pincushion, positive for barrel
-    float k = sin(iTime);
-    uvd = uvd*(1.0 + k*uvd*uvd);
-    return texture(channel, vec2(0.5) + vec2(sin(uva), cos(uva))*uvd);
+    // some code from https://www.geeks3d.com/20140213/glsl-shader-library-fish-eye-and-dome-and-barrel-distortion-post-processing-filters/2/
+    vec2 p = uv-0.5; // make center the origin
+    float theta  = atan(p.y, p.x); // get theta for centering it as a circle
+    float length_p = length(p); // length of p
+    float radius = length_p * length_p; // get radius of point in circle
+    p.x = radius * cos(theta); // distort x based on length/radius
+    p.y = radius * sin(theta); // distort y based on length/radius
+    return texture(channel, p + 0.5); // re-center and get texture
 }
 
-color4 Effect3(in sampler2D channel, in sViewport vp)
+// Effect3: returns texture with lighting from a point light using Lambertian lighting
+// channel: the texture to grap colors from
+// vp:      viewport, used for uv
+// time:    iTime
+color4 Effect3(in sampler2D channel, in sViewport vp, float time)
 {
-    vec3 position = vec3(vp.uv.x,vp.uv.y,0.0);;
-    vec3 normal = vec3(0.0,0.0,1.0);
+    vec3 position = vec3(vp.uv.x,vp.uv.y,0.0); // position in space
+    vec3 normal = vec3(0.0,0.0,1.0); // normal vector to plane
     
-    vec3 lightpos = vec3(cos(iTime) * 0.3 + 0.5, sin(iTime) * 0.3 + 0.5, 0.15);
+    vec3 lightpos = vec3(cos(time) * 0.3 + 0.5, sin(time) * 0.3 + 0.5, 0.15);
     float intensity = 3.0;
     
     // taken from Lab 4
@@ -220,31 +230,72 @@ color4 Effect3(in sampler2D channel, in sViewport vp)
     
 }
 
-color4 Effect4(in samplerCube channel, in sViewport vp)
+// Effect4: returns color from cubemap that spins and is distorted
+// channel: the cubemap
+// vp:      viewport, used for uv
+// time:    iTime
+// ray:     ray pointing towards cubemap
+color4 Effect4(in samplerCube channel, in sViewport vp, in sRay ray, float time)
+{   
+    //distort and move
+    vec3 p = ray.direction.xyz-0.5; // make center the origin
+    float theta  = atan(p.y, p.x); // get theta for centering it as a circle
+    float length_p = length(p.xy); // length of p
+    float radius = length_p * length_p; // get radius of point in circle
+    p.x = radius * cos(theta); // distort x based on length/radius
+    p.y = radius * sin(theta); // distort y based on length/radius
+	p = p + 0.6; // recenter
+    //return texture(channel,vec3(p.x,p.y,0.5));
+    
+    // rotation and distort
+    return texture(channel,vec3(p.x * cos(time) + p.z * sin(time),
+                                p.y,
+                                p.z *cos(time) -p.x * sin(time)));
+    
+    
+    // moves up/down
+	//return texture(channel,vec3(vp.uv.x,vp.uv.y + sin(iTime),1.0));//* sign(sin(iTime))));
+	
+    // rotates
+    //return texture(channel,vec3(ray.direction.x * cos(time) + ray.direction.z * sin(time),
+    //                            ray.direction.y,
+    //                            ray.direction.z *cos(time) -ray.direction.x * sin(time)));
+}
+
+// Effect4Bonus: returns color from cubemap that moves with mouse
+// channel: the cubemap
+// vp:      viewport, used for uv
+// time:    iTime
+// mouse:   position from mouse
+color4 Effect4Bonus(in samplerCube channel, in sViewport vp, vec2 mouse)
 {
     // credit to 2Light for code samples from https://www.shadertoy.com/view/4tBSz1
     vp.uv = vp.uv - vec2(0.5); // center image
-    vp.uv.x *= iResolution.x / iResolution.y; // fix aspect ratio
+    vp.uv.x *= vp.aspectRatio; // fix aspect ratio
 	
-    vec2 mo = (iMouse.xy/iResolution.xy)+0.0001; // get mouse
+    vec2 mo = (mouse.xy/vp.resolution.xy); // get normalized mouse
+    // adjust mouse sensitivity
 	float rotX = mo.x*6.28; // Pi * 2 for 360 deg rotation around Y axis (left and right)
-	float rotY = mo.y*3.14;
+	float rotY = mo.y*3.14; // Pi for 180 degree up and down
 
-    vec3 cam = -vec3(sin(rotY) * cos(rotX), cos(rotY), sin(rotX) * sin(rotY));
-    vec3 yaxis =  normalize(cross(vec3(0.0, 1.0, 0.0), cam));
+    vec3 cam = -vec3(sin(rotY) * cos(rotX), cos(rotY), sin(rotX) * sin(rotY)); // mouse's vector pointing from vp to point on cubemap
+    vec3 yaxis =  normalize(cross(vec3(0.0, 1.0, 0.0), cam)); // invert y axis
     vec3 xaxis = cross(cam, yaxis);
     return texture(channel,cam + yaxis * vp.uv.x + xaxis * vp.uv.y);
-    
-	return texture(channel,vec3(vp.uv.x * sign(sin(iTime)),vp.uv.y + sin(iTime),1.0));
 }
 
 //------------------------------------------------------------
 // RENDERING FUNCTIONS
 
 // calcColor: calculate the color of current pixel
-//	  vp:  input viewport info
-//	  ray: input ray info
-color4 calcColor(in sViewport vp, in sRay ray)
+//	  vp:       input viewport info
+//	  ray:      input ray info
+//    time:     iTime
+//    channel0: iChannel0
+//    channel0: iChannel1
+//    cubemap:  iChannel2
+//	  mouse:    iMouse.xy
+color4 calcColor(in sViewport vp, in sRay ray, in float time, in sampler2D channel0, in sampler2D channel1, in samplerCube cubemap, in vec2 mouse)
 {
     // test inputs
     //return color4(ray.direction.xyz == vp.viewportPoint.xyz); // pass
@@ -263,12 +314,13 @@ color4 calcColor(in sViewport vp, in sRay ray)
     sDCoord res = iChannelResolution[0].xy; // using channel 0 as they have the same resolution
     sScalar ratio = res.y * vp.resolutionInv.y; // ratio of texture and viewport
     sCoord loc = px / res * ratio; // get location of point on texture
-    //return Effect1(iChannel0, iChannel1,loc); // return mix of the two, fading on x axis
-    //return Effect2(iChannel0, vp);
-    //return FunnyEffect1(iChannel0, iChannel1,vp);
-    //return Effect3(iChannel0,vp);
-    return Effect4(iChannel2,vp);
-    //return texture(iChannel0, loc);
+    //return Effect1(channel0, channel1,loc); // return mix of the two, fading on x axis
+    //return Effect2(iChannel0, vp.uv);
+    //return Effect3(channel0,vp);
+    return Effect4(iChannel2, vp, ray, time);
+    //return Effect4Bonus(iChannel2,vp, mouse);
+
+    //return texture(channel0, loc);
 }
 
 
@@ -293,5 +345,5 @@ void mainImage(out color4 fragColor, in sCoord fragCoord)
     // render
     initViewport(vp, viewportHeight, focalLength, fragCoord, iResolution.xy);
     initRayPersp(ray, eyePosition, vp.viewportPoint.xyz);
-    fragColor += calcColor(vp, ray);
+    fragColor += calcColor(vp, ray, iTime,iChannel0,iChannel1,iChannel2,iMouse.xy);
 }
