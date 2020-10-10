@@ -1,0 +1,31 @@
+// GLSL STARTER CODE BY DANIEL S. BUCKSTEIN
+//  -> IMAGE TAB (final)
+
+//------------------------------------------------------------
+// SHADERTOY MAIN
+
+// mainImage: process the current pixel (exactly one call per pixel)
+//    fragColor: output final color for current pixel
+//    fragCoord: input location of current pixel in image (in pixels)
+void mainImage(out color4 fragColor, in sCoord fragCoord)
+{
+    // setup
+    // test UV for input image
+    sCoord uv = fragCoord / iChannelResolution[0].xy;
+    
+    // TESTING
+    // set iChannel0 to 'Misc/Buffer A' and fetch sample
+    //fragColor = texture(iChannel0, uv);
+    
+    // using equation from Myndex's answer from https://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color
+    // though instead of the suggested pow(BufColor,2.2) using a power of 5.0 to bring it closer to the provided example end product
+    color4 BufColor = texture(iChannel0, uv);
+    //float newcolor = 0.299*pow(BufColor.r,5.0) + 0.587*pow(BufColor.g,5.0) + 0.114*pow(BufColor.b,5.0);//BufColor.r * 0.6+BufColor.g * 0.3+BufColor.b*0.1;
+    BufColor = BufColor * BufColor * BufColor * BufColor * BufColor;
+    
+    vec3 Luminances = vec3(0.2126, 0.7152, 0.0722);
+    float newcolor = dot(Luminances,vec3(BufColor.r,BufColor.g,BufColor.b));
+
+    fragColor = vec4(newcolor);
+        //vec4((BufColor.x+BufColor.y+BufColor.z+BufColor.w) * 0.25);
+}
