@@ -15,5 +15,10 @@ void mainImage(out color4 fragColor, in sCoord fragCoord)
     
     // TESTING
     // set iChannel0 to 'Misc/Buffer A' and fetch sample
-    fragColor = texture(iChannel0, uv);
+    //fragColor = texture(iChannel0, uv);
+    
+
+    fragColor = texture(iChannel1, uv) + texture(iChannel0, uv);
+        //vec4(newcolor);
+        //vec4((BufColor.x+BufColor.y+BufColor.z+BufColor.w) * 0.25);
 }

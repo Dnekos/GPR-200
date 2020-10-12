@@ -1,0 +1,34 @@
+#define vec5 float[4]
+
+vec4 getPixel(float x, float y, vec2 inverseReso)
+{
+    //return texture(iChannel0, vec2(x, y) * inverseReso);
+
+    return texture(iChannel0, vec2(x + 0.5, y) * inverseReso);
+}
+
+
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+    
+    // texture space = (0,1]
+    // if texture  =100x100, resInv = 0.01,0.01
+    vec2 inverseReso = 1.0 / iChannelResolution[0].xy;
+    //vec2 uv = (fragCoord + 0.5) * inverseReso;
+    
+    
+    float invKernalSum = 0.0312; // 1/64, 64 being the sum of the full 4x4 matrix
+    vec5 kernel = vec5(invKernalSum, invKernalSum * 3.0, invKernalSum * 3.0, invKernalSum);
+
+	vec4[4] pixelsy = vec4[4]( getPixel(fragCoord.x,fragCoord.y - 1.0, inverseReso),
+                getPixel(fragCoord.x,fragCoord.y, inverseReso),
+                getPixel(fragCoord.x,fragCoord.y + 1.0, inverseReso),
+                getPixel(fragCoord.x,fragCoord.y + 2.0, inverseReso)
+                );
+    color4 blur = pixelsy[0] * kernel[0]+
+        pixelsy[1] * kernel[1]+
+        pixelsy[2] * kernel[2]+
+        pixelsy[3] * kernel[3];
+
+    fragColor = blur;
+}

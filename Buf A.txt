@@ -17,9 +17,10 @@ color4 calcColor(in sViewport vp, in sRay ray, in float time, in samplerCube cha
     //return color4(vp.uv, 0.0, 0.0);
     //return color4(vp.ndc, 0.0, 0.0);
     //return asPoint(sBasis(vp.viewportPoint.xy, -vp.viewportPoint.z));
-    return texture(channel,vec3(ray.direction.x * cos(time) + ray.direction.z * sin(time),
-                                ray.direction.y,
-                                ray.direction.z *cos(time) -ray.direction.x * sin(time)));
+    float cosTime = cos(time), sinTime = sin(time);
+    return texture(channel,vec3(ray.direction.x * cosTime + ray.direction.z * sinTime,
+                                ray.direction.y + 0.5,
+                                ray.direction.z * cosTime -ray.direction.x * sinTime));
 }
 
 
