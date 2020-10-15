@@ -1,3 +1,17 @@
+/*
+	Copyright 2020 Demetrius J Nekos
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+		http://www.apache.org/licenses/LICENSE-2.0
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+*/
+
 // GLSL STARTER CODE BY DANIEL S. BUCKSTEIN
 //  -> IMAGE TAB (final)
 
@@ -12,11 +26,7 @@ void mainImage(out color4 fragColor, in sCoord fragCoord)
     // setup
     // test UV for input image
     sCoord uv = fragCoord / iChannelResolution[0].xy;
-    
-    // TESTING
-    // set iChannel0 to 'Misc/Buffer A' and fetch sample
-    //fragColor = texture(iChannel0, uv);
-    
+        
     // using equation from Myndex's answer from https://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color
     // though instead of the suggested pow(BufColor,2.2) using a power of 5.0 to bring it closer to the provided example end product
     color4 BufColor = texture(iChannel0, uv);
@@ -24,8 +34,8 @@ void mainImage(out color4 fragColor, in sCoord fragCoord)
     BufColor = BufColor * BufColor * BufColor * BufColor * BufColor;
     
     vec3 Luminances = vec3(0.2126, 0.7152, 0.0722);
-    float newcolor = dot(Luminances,vec3(BufColor.r,BufColor.g,BufColor.b));
+    float brightness = dot(Luminances, BufColor.rgb);
 
-    fragColor = vec4(newcolor);
+    fragColor = vec4(brightness);
         //vec4((BufColor.x+BufColor.y+BufColor.z+BufColor.w) * 0.25);
 }

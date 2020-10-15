@@ -1,8 +1,30 @@
+/*
+	Copyright 2020 Demetrius J Nekos
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+		http://www.apache.org/licenses/LICENSE-2.0
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+*/
+
 // GLSL STARTER CODE BY DANIEL S. BUCKSTEIN
 //  -> IMAGE TAB (final)
 
 //------------------------------------------------------------
 // SHADERTOY MAIN
+
+// ScreenCompo: Screen composite equation
+//    base: bottom image layer
+//    top: top image layer
+color4 ScreenCompo(in color4 base, in color4 top)
+{
+    return 1.0 - (1.0 - base) * (1.0 - top);
+}
 
 // mainImage: process the current pixel (exactly one call per pixel)
 //    fragColor: output final color for current pixel
@@ -17,8 +39,14 @@ void mainImage(out color4 fragColor, in sCoord fragCoord)
     // set iChannel0 to 'Misc/Buffer A' and fetch sample
     //fragColor = texture(iChannel0, uv);
     
+    color4 base = texture(iChannel1, uv);
+    color4 bloom = texture(iChannel0, uv);
 
-    fragColor = texture(iChannel1, uv) + texture(iChannel0, uv);
-        //vec4(newcolor);
-        //vec4((BufColor.x+BufColor.y+BufColor.z+BufColor.w) * 0.25);
+    fragColor = 
+        //mix(base, bloom,0.5); // mix compositing
+        //base + bloom; // addition compositing
+    	//ScreenCompo(base, bloom); // screen compositing
+    	//abs(base - bloom); // difference compositing
+    	(length(bloom) <= 0.5) ? base * (2.0 * bloom) : ScreenCompo(base, 2.0 * bloom - 1.0);
+        //texture(iChannel0, uv);
 }
