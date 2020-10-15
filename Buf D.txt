@@ -21,7 +21,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     
     //for gaussian
     
-    float invKernalSum = 0.125; // 1/64, 64 being the sum of the full 4x4 matrix
+    float invKernalSum = 0.125; // 1/8, 8 being the sum of the kernal
     vec4 kernel = vec4(invKernalSum, invKernalSum * 3.0, invKernalSum * 3.0, invKernalSum);
 
 	vec4[4] pixelsx = vec4[4]( getPixel(fragCoord.x - 1.0,fragCoord.y, inverseReso, iChannel0),

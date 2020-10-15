@@ -42,11 +42,13 @@ void mainImage(out color4 fragColor, in sCoord fragCoord)
     color4 base = texture(iChannel1, uv);
     color4 bloom = texture(iChannel0, uv);
 
+    // Credit to https://www.w3.org/TR/compositing-1/#valdef-blend-mode-hard-light 
+    // for compositing equations
     fragColor = 
         //mix(base, bloom,0.5); // mix compositing
         //base + bloom; // addition compositing
     	//ScreenCompo(base, bloom); // screen compositing
     	//abs(base - bloom); // difference compositing
-    	(length(bloom) <= 0.5) ? base * (2.0 * bloom) : ScreenCompo(base, 2.0 * bloom - 1.0);
+    	(length(bloom) <= 0.5) ? base * (2.0 * bloom) : ScreenCompo(base, 2.0 * bloom - 1.0); // hard-light compositing
         //texture(iChannel0, uv);
 }
