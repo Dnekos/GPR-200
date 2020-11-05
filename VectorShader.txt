@@ -14,6 +14,7 @@ layout (location = 1) in vec3 aNormal;
 // TEXTURE SPACE
 //layout (location = 2) in vec2 aTexcoord;
 layout (location = 2) in vec4 aTexcoord;
+uniform sampler2D uTexture;
 
 // TRANFORMATION UNIFORMS
 uniform mat4 uModelMat;
