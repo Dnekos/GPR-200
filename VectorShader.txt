@@ -1,0 +1,85 @@
+#version 300 es
+//#version 450
+
+// MAIN DUTY: PROCESS ATTRIBUTES
+// e.g. 3D position in space
+// e.g. normal
+// e.g. 2D uv: texture coordinate
+
+layout (location = 0) in vec4 aPosition;
+layout (location = 1) in vec3 aNormal;
+
+
+//  2D uv : texture coordinate
+// TEXTURE SPACE
+//layout (location = 2) in vec2 aTexcoord;
+layout (location = 2) in vec4 aTexcoord;
+
+// TRANFORMATION UNIFORMS
+uniform mat4 uModelMat;
+uniform mat4 uViewMat;
+uniform mat4 uProjMat;
+uniform mat4 uViewProjMat;
+
+// VARYING
+out vec4 vColor;
+
+//PER-FRAGMENT VARYING
+out vec4 vNormal;
+out vec4 vTexcoord;
+
+void main()
+{
+	// REQUIRED: set this value:
+	//problem: gl_position is in "clip-space"
+	//problem: aPosition is in "object-space"
+	//solution: pos_w = M * aPos
+	// M = model matrix
+
+
+	// we need to get things into perspective of the camera
+
+	// pos_v = V * pos_w
+	//position in world-space
+	//vec4 pos_world = uModelMat * aPosition;
+	
+	//position in cam space
+	// pos_v = V*M*aPos // V=view matrix = camera's ModelMat^-1
+	//vec4 pos_comera = uViewMat * pos_world;
+	
+	//position in clip space
+	//pos_clip = P*V*M*aPos = uViewProjMat * pos_world
+	//vec4 pos_clip = uViewProjMat * pos_world;	
+	
+	//POSITION PIPELINE
+	mat4 modelViewMat = uViewMat * uModelMat;
+	vec4 pos_camera = modelViewMat * aPosition;
+	vec4 pos_clip = uProjMat * pos_camera;
+	gl_Position = pos_clip;
+
+    //NORMAL PIPELINE
+    mat3 normalMat = transpose(inverse(mat3(modelViewMat))) ;
+	vec3 norm_camera = normalMat * aNormal;
+	//vec3 norm_camera = mat3(modelViewMat) * aNormal;
+
+	
+	// TEXCOORD PIPELINE
+	mat4 atlasMat = mat4(0.5,0.0,0.0,0.0,
+						 0.0,0.5,0.0,0.0,
+						 0.0,0.0,1.0,0.0,
+						 0.25,0.25,0.0,1.0);
+	vec4 uv_atlas = atlasMat * aTexcoord;
+	
+	// OPTIONAL: SET VARYING
+	//vColor = vec4(0.5,0.0,0.25,1.0);
+	//vColor = aPosition;
+		
+	// PER-VERTEX: calculate and output final color
+	//vColor = vec4(aNormal * 0.5 + 0.5,1.0);
+	
+	// PER-FRAGMENT
+	vNormal = vec4(norm_camera, 0.0);
+	
+	vTexcoord = uv_atlas;
+	//gl_Position = uProjMat * modelViewMat * aTexcoord;
+}
