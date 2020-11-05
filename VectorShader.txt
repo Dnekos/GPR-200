@@ -30,7 +30,7 @@ out vec4 vNormal;
 out vec4 vTexcoord;
 out vec4 vLightPos1;
 out vec4 vLightPos2;
-out vec3 raypos;
+out vec3 VRayPos;
 out vec4 vPosition;
 
 
@@ -123,21 +123,24 @@ void main()
 	vNormal = normalize(vec4(norm_camera, 0.0));
 	// VIEW-SPACE
 	/*
+	VRayPos = (uViewMat*vec4(0.0)).xyz;(uModelMat*vec4(0.0)).xyz;
 	vPosition = uViewMat*aPosition;
 	vLightPos1 = uViewMat*vec4(1.0, 5.0, 0.0,1.0);
 	vLightPos2 = uViewMat* vec4(0.0,0.0,-5.0,1.0);
 	*/
 	// OBJECT-SPACE
+	
+	VRayPos = (uModelMat*vec4(0.0)).xyz;
 	vPosition = uModelMat*aPosition;
-	vLightPos1 = uModelMat*vec4(1.0, 15.0, 0.0,1.0);
-	vLightPos2 = uModelMat* vec4(0.0,0.0,-15.0,1.0);
+	vLightPos1 = uModelMat*vec4(2.5);
+	vLightPos2 = uModelMat* vec4(-3.0,4.0,2.0,1.0);
 	
 
     // PER-VERTEX: calculate and output final color	
     
     // VIEW-SPACE
     /*
-    vec3 raypos = (uViewMat*vec4(0.0)).xyz;		
+    raypos = (uViewMat*vec4(0.0)).xyz;		
     vPosition = uViewMat*aPosition;
 	vColor = calcLighting(uViewMat*vec4(1.0, 15.0, 0.0,1.0),vec4(1.0),15.0,vPosition,vNormal.xyz,raypos)
 	+ calcLighting(uViewMat* vec4(0.0,0.0,-15.0,1.0),vec4(1.0),30.0,vPosition,vNormal.xyz,raypos)
@@ -145,7 +148,7 @@ void main()
 	*/
 	// OBJECT-SPACE
 	/*
-	vec3 raypos = (uModelMat*vec4(0.0)).xyz;
+	raypos = (uModelMat*vec4(0.0)).xyz;
 	vPosition = uModelMat*aPosition;		
 	vColor = calcLighting(uModelMat*vec4(1.0, 15.0, 0.0,1.0),vec4(1.0),30.0,vPosition,vNormal.xyz,raypos)
 	+ calcLighting(uModelMat*vec4(0.0,0.0,-15.0,1.0),vec4(1.0),30.0,vPosition,vNormal.xyz,raypos)
