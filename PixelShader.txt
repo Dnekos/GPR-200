@@ -28,5 +28,5 @@ void main()
 	//PER-FRAGMENT: calulate final color here using inputs
 	rtFragColor = vec4(N.xyz * 0.5 + 0.5, 1.0);
 	
-	rtFragColor = texture(uTexture,vTexcoord.xy*1.33);//vec4(vTexcoord);
+	rtFragColor = vColor;texture(uTexture,vTexcoord.xy*2.0*vec2(-1.0,1.0));//vec4(vTexcoord);
 }

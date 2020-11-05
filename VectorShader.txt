@@ -29,6 +29,44 @@ out vec4 vColor;
 out vec4 vNormal;
 out vec4 vTexcoord;
 
+// calcLighting: calculates Lambertian and Blinn-Phong reflectance, and returns part of the summation of the final color
+//    light: the current Point Light
+//    position:     point on the sphere that we are drawing
+//    normal:       normal vector from point
+//    rayOrigin:    input ray origin
+//	  viewVector:	vector from point to camera
+vec4 calcLighting (in vec4 lightpos, in vec4 lightcolor, float lightintense, in vec3 position,
+                   in vec3 normal, in vec3 rayOrigin)
+{
+    //Taken from Lab 4
+    // LAMBERTIAN REFLECTANCE
+    vec3 lightVector = lightpos.xyz - position; // get vector of position to the light
+	float lightLength = length(lightVector); // get length of light vector
+    lightVector = lightVector / lightLength; // normalizes vector
+   
+    float diffuseCoefficient = max(0.0, dot(lightVector, normal)); // get coefficient
+   
+    float intensityRatio = lightLength/lightintense; // simplifying attenuation equation by doing this once
+    float attenuation = 1.0 / (1.0 + intensityRatio +
+                             (intensityRatio * intensityRatio)); // get attenuation
+    float Lambertian = diffuseCoefficient * attenuation; // final lambertian
+
+   // PHONG REFLECTANCE
+        
+    vec3 viewVector = normalize(rayOrigin.xyz - position.xyz);
+    vec3 reflectedLightVector =reflect(-normalize(lightVector).xyz, 
+                                           normal.xyz);
+    float specular = max(0.0, dot(viewVector, reflectedLightVector));
+    specular *= specular; // specularCoefficient^2
+    specular *= specular; // specularCoefficient^4
+    specular *= specular * specular * specular; // specularCoefficient^16
+    specular *= specular * specular * specular; // specularCoefficient^64
+   //return vec4(specularCoefficient);
+    vec4 ambient = vec4(0.3,0.3,0.3,0.0);
+        
+    return ambient * 0.15 + (Lambertian * texture(uTexture,vTexcoord.xy*2.0*vec2(-1.0,1.0)) + specular) * lightcolor; //Phong color
+}
+
 void main()
 {
 	// REQUIRED: set this value:
@@ -65,21 +103,26 @@ void main()
 
 	
 	// TEXCOORD PIPELINE
-	mat4 atlasMat = mat4(0.5,0.0,0.0,0.0,
-						 0.0,0.5,0.0,0.0,
+	mat4 atlasMat = mat4(0.5,0.0,0.0,0.25,
+						 0.0,0.5,0.0,0.25,
 						 0.0,0.0,1.0,0.0,
-						 0.25,0.25,0.0,1.0);
+						 0.0,0.0,0.0,1.0);
 	vec4 uv_atlas = atlasMat * aTexcoord;
-	
+	uv_atlas = uv_atlas;
+		vTexcoord = uv_atlas;
 	// OPTIONAL: SET VARYING
 	//vColor = vec4(0.5,0.0,0.25,1.0);
 	//vColor = aPosition;
 		
-	// PER-VERTEX: calculate and output final color
-	//vColor = vec4(aNormal * 0.5 + 0.5,1.0);
-	
-	// PER-FRAGMENT
-	vNormal = vec4(norm_camera, 0.0);
+    // PER-FRAGMENT
+	vNormal = normalize(vec4(norm_camera, 0.0));
+	//vNormal = vec4(norm_camera, 0.0);
+
+    // PER-VERTEX: calculate and output final color	
+    vec3 raypos = (uViewMat*uModelMat*vec4(0.0)).xyz;		
+	vColor = calcLighting(uViewMat*uModelMat*vec4(1.5, 1.5, 1.5,1.0),vec4(1.0),20.0,aPosition.xyz,vNormal.xyz,raypos)
+	+ calcLighting(uViewMat*uModelMat* vec4(1.3, 1.0, 0.0,1.0),vec4(1.0),30.0,aPosition.xyz,vNormal.xyz,raypos);
+		
 	
 	vTexcoord = uv_atlas;
 	//gl_Position = uProjMat * modelViewMat * aTexcoord;
