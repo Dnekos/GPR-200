@@ -140,7 +140,7 @@ void main()
     
     // VIEW-SPACE
     /*
-    raypos = (uViewMat*vec4(0.0)).xyz;		
+    vec3 raypos = (uViewMat*vec4(0.0)).xyz;		
     vPosition = uViewMat*aPosition;
 	vColor = calcLighting(uViewMat*vec4(1.0, 15.0, 0.0,1.0),vec4(1.0),15.0,vPosition,vNormal.xyz,raypos)
 	+ calcLighting(uViewMat* vec4(0.0,0.0,-15.0,1.0),vec4(1.0),30.0,vPosition,vNormal.xyz,raypos)
@@ -148,7 +148,7 @@ void main()
 	*/
 	// OBJECT-SPACE
 	/*
-	raypos = (uModelMat*vec4(0.0)).xyz;
+	vec3 raypos = (uModelMat*vec4(0.0)).xyz;
 	vPosition = uModelMat*aPosition;		
 	vColor = calcLighting(uModelMat*vec4(1.0, 15.0, 0.0,1.0),vec4(1.0),30.0,vPosition,vNormal.xyz,raypos)
 	+ calcLighting(uModelMat*vec4(0.0,0.0,-15.0,1.0),vec4(1.0),30.0,vPosition,vNormal.xyz,raypos)
